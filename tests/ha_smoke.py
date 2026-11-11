@@ -39,3 +39,13 @@ r.state.offline=True
 assert soc.available and soc.extra_state_attributes['data_fresh'] is False
 assert not s.available and not b.available
 print('HA sensor last-known/fresh/offline behavior: PASS')
+for key,unit,device_class in [('hv_voltage','V','voltage'),('battery_current','A','current'),('battery_power','kW','power')]:
+ sensor=WiCANSensor(r,key,key)
+ assert sensor.native_unit_of_measurement==unit and sensor.device_class==device_class
+ assert not sensor.available and sensor.extra_state_attributes is None
+for changes in ({'battery_power_topic':data['soc_d_topic']},{'hv_voltage_topic':'a/#'},{'battery_current_topic':'wican/aabb11223344/cmd'}):
+ try:validate({**data,**changes},data['device_id'])
+ except ValueError:pass
+ else:raise AssertionError(changes)
+assert validate(data,data['device_id'])['battery_power_topic']==''
+print('HA optional HV topics, signed power metadata and validation: PASS')

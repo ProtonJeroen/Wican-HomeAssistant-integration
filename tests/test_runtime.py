@@ -100,3 +100,20 @@ class LastKnownPercentages(unittest.TestCase):
   self.assertFalse(s.percentage_available('soh'))
   self.assertTrue(s.restore_percentage('soh',100))
   self.assertIsNone(s.measured_at['soh'])
+
+class HVRuntime(Runtime):
+ async def test_optional_power_topics_and_signed_values(self):
+  self.assertNotIn('wican-pro/ioniq/battery_power',self.topics)
+  self.r.stop()
+  self.data.update({k+'_topic':'wican-pro/ioniq/'+k for k in rt.POWER_KEYS})
+  self.r=rt.WiCANRuntime(object(),types.SimpleNamespace(data=self.data,options={}))
+  await self.r.async_start()
+  for key,field,value in [('hv_voltage','HV_VOLTAGE',352.3),('battery_current','BATTERY_CURRENT',-8.4),('battery_power','BATTERY_POWER',2.95932)]:
+   self.msg(self.data[key+'_topic'],{field:value},True);self.assertFalse(self.r.available(key))
+   self.msg(self.data[key+'_topic'],{field:value});self.assertEqual(self.r.state.values[key],value)
+   self.assertTrue(self.r.available(key))
+  self.msg(self.data['battery_power_topic'],{'BATTERY_POWER':-20});self.assertEqual(self.r.state.values['battery_power'],-20)
+  self.msg(self.data['battery_power_topic'],{'BATTERY_POWER':'nan'});self.assertEqual(self.r.state.values['battery_power'],-20)
+  self.now+=181
+  self.assertFalse(self.r.available('battery_power'))
+  self.assertFalse(self.r.available('hv_voltage'))

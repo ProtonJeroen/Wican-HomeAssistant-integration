@@ -2,7 +2,7 @@
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
-from .const import DOMAIN
+from .const import DOMAIN, POWER_KEYS
 from .protocol import device_id, topic
 
 KEYS = ("soc_d", "soc", "soh", "charger_connected", "charging", "charging_dc")
@@ -16,6 +16,8 @@ def schema(values, initial=False):
     fields[vol.Required("status_topic", default=values.get("status_topic", "wican-pro/DEVICE_ID/can/status"))] = str
     for key in KEYS:
         fields[vol.Required(f"{key}_topic", default=values.get(f"{key}_topic", f"wican-pro/ioniq/{key}"))] = str
+    for key in POWER_KEYS:
+        fields[vol.Optional(f"{key}_topic", default=values.get(f"{key}_topic", ""))] = str
     fields[vol.Required("poll_interval", default=values.get("poll_interval", 60))] = vol.All(vol.Coerce(int), vol.Range(min=30, max=3600))
     fields[vol.Required("stale_after", default=values.get("stale_after", 180))] = vol.All(vol.Coerce(int), vol.Range(min=60, max=7200))
     return vol.Schema(fields)
@@ -27,7 +29,11 @@ def validate(data, identity):
         raise ValueError("invalid_name")
     for key in ("status_topic", *(f"{key}_topic" for key in KEYS)):
         result[key] = topic(result[key].replace("DEVICE_ID", identity))
+    for key in POWER_KEYS:
+        raw = result.get(f"{key}_topic", "").strip()
+        result[f"{key}_topic"] = topic(raw.replace("DEVICE_ID", identity)) if raw else ""
     all_topics = [result["status_topic"], *(result[f"{key}_topic"] for key in KEYS)]
+    all_topics.extend(result[f"{key}_topic"] for key in POWER_KEYS if result[f"{key}_topic"])
     reserved = {f"wican/{identity}/{suffix}" for suffix in ("cmd", "rsp", "battery")}
     if len(set(all_topics)) != len(all_topics) or reserved.intersection(all_topics):
         raise ValueError("duplicate_topic")

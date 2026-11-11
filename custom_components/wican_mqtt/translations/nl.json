@@ -17,7 +17,10 @@
           "soh_topic": "SOH topic",
           "charger_connected_topic": "CHARGER_CONNECTED topic",
           "charging_topic": "CHARGING topic",
-          "charging_dc_topic": "CHARGING_DC topic"
+          "charging_dc_topic": "CHARGING_DC topic",
+          "hv_voltage_topic": "HV-accuspanning topic (optioneel)",
+          "battery_current_topic": "Accustroom topic (optioneel)",
+          "battery_power_topic": "Netto accuvermogen topic (optioneel)"
         }
       }
     },
@@ -47,7 +50,10 @@
           "soh_topic": "SOH topic",
           "charger_connected_topic": "CHARGER_CONNECTED topic",
           "charging_topic": "CHARGING topic",
-          "charging_dc_topic": "CHARGING_DC topic"
+          "charging_dc_topic": "CHARGING_DC topic",
+          "hv_voltage_topic": "HV-accuspanning topic (optioneel)",
+          "battery_current_topic": "Accustroom topic (optioneel)",
+          "battery_power_topic": "Netto accuvermogen topic (optioneel)"
         }
       }
     },

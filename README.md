@@ -60,3 +60,9 @@ Validatie 2026-11-11: 10 unit tests geslaagd. HA 2025.2.0 imports, configuraties
 ## 0.1.1
 
 Behoud laatst bekende percentages bij voertuigstilstand en herstart, met oorspronkelijke meettijd en freshness-attributen. Laadstatussen en spanning blijven vervallen. Smart EV Charging ziet hierdoor een laatst bekende SoC: controleer `data_fresh`/`last_measured_at` voor toepassingen die een recente meting vereisen.
+
+## 0.1.2 — optionele HV-accumetingen
+
+Voegt HV-accuspanning, signed accustroom en netto accuvermogen toe via drie optionele MQTT-topics. Positief vermogen betekent naar de tractieaccu. De nieuwe metingen vereisen verse berichten en worden niet als oude laadwaarde hersteld. Bestaande configuraties blijven werken; configureer de nieuwe topics via de integratieopties.
+
+Zie [Ioniq 28 kWh: PID-instellingen en validatie](docs/ioniq-28-power.md). Live controle op de auto volgt; deze versie berekent nog geen laadenergie of SOH-schatting.

@@ -5,7 +5,7 @@ from time import monotonic
 from homeassistant.components import mqtt
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_time_interval
-from .const import DOMAIN
+from .const import DOMAIN, POWER_KEYS
 from .protocol import Values, decode, number, flag
 
 _LOGGER = logging.getLogger(__name__)
@@ -15,6 +15,8 @@ class WiCANRuntime:
         self.hass = hass
         self.entry = entry
         self.config = {**entry.data, **entry.options}
+        for key in POWER_KEYS:
+            self.config.setdefault(f"{key}_topic", "")
         self.state = Values()
         self.listeners = set()
         self.unsubs = []
@@ -42,6 +44,8 @@ class WiCANRuntime:
         topics = {self.response_topic, self.config["status_topic"]}
         topics.update(self.config[f"{key}_topic"] for key in
                       ("soc_d", "soc", "soh", "charger_connected", "charging", "charging_dc"))
+        topics.update(self.config[f"{key}_topic"] for key in POWER_KEYS
+                      if self.config[f"{key}_topic"])
         for topic in topics:
             self.unsubs.append(await mqtt.async_subscribe(self.hass, topic, self.message, 0))
         self.unsubs.append(async_track_time_interval(
@@ -78,11 +82,17 @@ class WiCANRuntime:
         else:
             for key, field in (("soc_d", "SOC_D"), ("soc", "SOC"), ("soh", "SOH"),
                                ("charger_connected", "CHARGER_CONNECTED"),
-                               ("charging", "CHARGING"), ("charging_dc", "CHARGING_DC")):
+                               ("charging", "CHARGING"), ("charging_dc", "CHARGING_DC"),
+                               ("hv_voltage", "HV_VOLTAGE"),
+                               ("battery_current", "BATTERY_CURRENT"),
+                               ("battery_power", "BATTERY_POWER")):
                 if message.topic != self.config[f"{key}_topic"]:
                     continue
                 value = data.get(field)
-                parsed = number(value, 0, 100) if key in ("soc_d", "soc", "soh") else flag(value)
+                limits = {"soc_d": (0, 100), "soc": (0, 100), "soh": (0, 100),
+                          "hv_voltage": (0, 500), "battery_current": (-1000, 1000),
+                          "battery_power": (-500, 500)}
+                parsed = number(value, *limits[key]) if key in limits else flag(value)
                 self.state.update(key, parsed, now)
         self.notify()
 

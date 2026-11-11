@@ -17,7 +17,10 @@
           "soh_topic": "SOH topic",
           "charging_topic": "CHARGING topic",
           "charging_dc_topic": "CHARGING_DC topic",
-          "charger_connected_topic": "CHARGER_CONNECTED topic"
+          "charger_connected_topic": "CHARGER_CONNECTED topic",
+          "hv_voltage_topic": "HV battery voltage topic (optional)",
+          "battery_current_topic": "Battery current topic (optional)",
+          "battery_power_topic": "Net battery power topic (optional)"
         }
       }
     },
@@ -47,7 +50,10 @@
           "soh_topic": "SOH topic",
           "charging_topic": "CHARGING topic",
           "charging_dc_topic": "CHARGING_DC topic",
-          "charger_connected_topic": "CHARGER_CONNECTED topic"
+          "charger_connected_topic": "CHARGER_CONNECTED topic",
+          "hv_voltage_topic": "HV battery voltage topic (optional)",
+          "battery_current_topic": "Battery current topic (optional)",
+          "battery_power_topic": "Net battery power topic (optional)"
         }
       }
     },
