@@ -2,11 +2,22 @@
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.components.sensor import RestoreSensor
 from .entity import WiCANEntity
+from .const import POWER_KEYS
+
+PERCENTAGES = ("soc_d", "soc", "soh")
+POWER_SENSORS = {
+    "hv_voltage": ("HV-accuspanning", "V", SensorDeviceClass.VOLTAGE),
+    "battery_current": ("Accustroom", "A", SensorDeviceClass.CURRENT),
+    "battery_power": ("Netto accuvermogen", "kW", SensorDeviceClass.POWER),
+}
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([WiCANSensor(entry.runtime_data, key, name) for key, name in
+    entities = [WiCANSensor(entry.runtime_data, key, name) for key, name in
                        (("voltage", "12V accuspanning"), ("soc_d", "Accupercentage"),
-                        ("soc", "BMS accupercentage"), ("soh", "Accugezondheid"))])
+                        ("soc", "BMS accupercentage"), ("soh", "Accugezondheid"))]
+    entities.extend(WiCANSensor(entry.runtime_data, key, POWER_SENSORS[key][0])
+                    for key in POWER_KEYS if entry.runtime_data.config.get(f"{key}_topic"))
+    async_add_entities(entities)
 
 class WiCANSensor(WiCANEntity, RestoreSensor):
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -16,7 +27,11 @@ class WiCANSensor(WiCANEntity, RestoreSensor):
         self._attr_name = name
         self._attr_native_unit_of_measurement = "V" if key == "voltage" else "%"
         self._attr_device_class = SensorDeviceClass.VOLTAGE if key == "voltage" else SensorDeviceClass.BATTERY
-        self._attr_suggested_display_precision = 1
+        if key in POWER_SENSORS:
+            _, unit, device_class = POWER_SENSORS[key]
+            self._attr_native_unit_of_measurement = unit
+            self._attr_device_class = device_class
+        self._attr_suggested_display_precision = 2 if key == "battery_power" else 1
 
     @property
     def native_value(self):
@@ -24,13 +39,13 @@ class WiCANSensor(WiCANEntity, RestoreSensor):
 
     @property
     def available(self):
-        if self.key == "voltage":
+        if self.key not in PERCENTAGES:
             return super().available
         return self.runtime.state.percentage_available(self.key)
 
     @property
     def extra_state_attributes(self):
-        if self.key == "voltage":
+        if self.key not in PERCENTAGES:
             return None
         fresh = self.runtime.available(self.key)
         return {
@@ -41,7 +56,7 @@ class WiCANSensor(WiCANEntity, RestoreSensor):
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
-        if self.key == "voltage":
+        if self.key not in PERCENTAGES:
             return
         previous_data = await self.async_get_last_sensor_data()
         previous_state = await self.async_get_last_state()

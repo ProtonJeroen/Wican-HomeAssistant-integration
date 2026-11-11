@@ -5,7 +5,7 @@ from time import monotonic
 from homeassistant.components import mqtt
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_time_interval
-from .const import DOMAIN
+from .const import DOMAIN, POWER_KEYS
 from .protocol import Values, decode, number, flag
 
 _LOGGER = logging.getLogger(__name__)
@@ -15,10 +15,14 @@ class WiCANRuntime:
         self.hass = hass
         self.entry = entry
         self.config = {**entry.data, **entry.options}
+        for key in POWER_KEYS:
+            self.config.setdefault(f"{key}_topic", "")
         self.state = Values()
         self.listeners = set()
         self.unsubs = []
         self.stopped = False
+        self.contact_at = None
+        self.connection_offline = False
         self.next_poll = 0
         self.pending_until = 0
         self.next_probe = 0
@@ -42,6 +46,8 @@ class WiCANRuntime:
         topics = {self.response_topic, self.config["status_topic"]}
         topics.update(self.config[f"{key}_topic"] for key in
                       ("soc_d", "soc", "soh", "charger_connected", "charging", "charging_dc"))
+        topics.update(self.config[f"{key}_topic"] for key in POWER_KEYS
+                      if self.config[f"{key}_topic"])
         for topic in topics:
             self.unsubs.append(await mqtt.async_subscribe(self.hass, topic, self.message, 0))
         self.unsubs.append(async_track_time_interval(
@@ -57,11 +63,15 @@ class WiCANRuntime:
         if message.topic == self.config["status_topic"]:
             status = data.get("status")
             if status == "offline" and not message.retain:
+                self.connection_offline = True
                 self.state.offline = True
                 self.state.received.clear()
                 self.pending_until = 0
                 self.next_probe = now + 300
             elif status == "online":
+                if not message.retain:
+                    self.contact_at = now
+                    self.connection_offline = False
                 # Retained online is a hint to probe, not proof of availability.
                 self.next_poll = 0
                 self.next_probe = 0
@@ -75,15 +85,25 @@ class WiCANRuntime:
                 value = number(data.get("battery_voltage"), 0, 30)
                 if self.state.update("voltage", value, now):
                     self.pending_until = 0
+                    self.contact_at = now
+                    self.connection_offline = False
         else:
             for key, field in (("soc_d", "SOC_D"), ("soc", "SOC"), ("soh", "SOH"),
                                ("charger_connected", "CHARGER_CONNECTED"),
-                               ("charging", "CHARGING"), ("charging_dc", "CHARGING_DC")):
+                               ("charging", "CHARGING"), ("charging_dc", "CHARGING_DC"),
+                               ("hv_voltage", "HV_VOLTAGE"),
+                               ("battery_current", "BATTERY_CURRENT"),
+                               ("battery_power", "BATTERY_POWER")):
                 if message.topic != self.config[f"{key}_topic"]:
                     continue
                 value = data.get(field)
-                parsed = number(value, 0, 100) if key in ("soc_d", "soc", "soh") else flag(value)
-                self.state.update(key, parsed, now)
+                limits = {"soc_d": (0, 100), "soc": (0, 100), "soh": (0, 100),
+                          "hv_voltage": (0, 500), "battery_current": (-1000, 1000),
+                          "battery_power": (-500, 500)}
+                parsed = number(value, *limits[key]) if key in limits else flag(value)
+                if self.state.update(key, parsed, now):
+                    self.contact_at = now
+                    self.connection_offline = False
         self.notify()
 
     async def tick(self, _now):
@@ -105,6 +125,14 @@ class WiCANRuntime:
         except Exception:
             self.pending_until = 0
             _LOGGER.warning("Could not request WiCAN voltage", exc_info=True)
+
+    @property
+    def reachable(self):
+        if self.connection_offline:
+            return False
+        if self.contact_at is None:
+            return None
+        return monotonic() - self.contact_at < self.timeout
 
     def available(self, key):
         return self.state.available(key, monotonic(), self.timeout)

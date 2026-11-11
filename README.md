@@ -60,3 +60,15 @@ Validatie 2026-11-11: 10 unit tests geslaagd. HA 2025.2.0 imports, configuraties
 ## 0.1.1
 
 Behoud laatst bekende percentages bij voertuigstilstand en herstart, met oorspronkelijke meettijd en freshness-attributen. Laadstatussen en spanning blijven vervallen. Smart EV Charging ziet hierdoor een laatst bekende SoC: controleer `data_fresh`/`last_measured_at` voor toepassingen die een recente meting vereisen.
+
+## 0.1.2 — optionele HV-accumetingen
+
+Voegt HV-accuspanning, signed accustroom en netto accuvermogen toe via drie optionele MQTT-topics. Positief vermogen betekent naar de tractieaccu. De nieuwe metingen vereisen verse berichten en worden niet als oude laadwaarde hersteld. Bestaande configuraties blijven werken; configureer de nieuwe topics via de integratieopties.
+
+Zie [Ioniq 28 kWh: PID-instellingen en validatie](docs/ioniq-28-power.md). Live controle op de auto volgt; deze versie berekent nog geen laadenergie of SOH-schatting.
+
+### Bereikbaar / slaapstand volgen
+
+0.1.2 voegt ook de diagnostische sensor **Bereikbaar** toe. Een live online-melding, geldige PID-meting of antwoord op onze spanningsaanvraag bevestigt contact. Een live offline-melding of ontbreken van contact gedurende de ingestelde vervaltijd zet de sensor uit. Bij starten is de status onbekend totdat live bewijs binnenkomt; retained berichten zijn geen nieuw contact.
+
+Uit kan slaapstand, wifi-uitval, een stroomonderbreking of een MQTT-probleem betekenen. Firmware 4.52p publiceert geen expliciete sleep/awake-status, daarom heet deze sensor niet Slaapstand. De sensor blijft zichtbaar als uit terwijl andere meetwaarden niet beschikbaar worden. Hij gebruikt bestaande berichten en voegt geen aanvragen toe. De normale spanningspolling blijft bestaan.
