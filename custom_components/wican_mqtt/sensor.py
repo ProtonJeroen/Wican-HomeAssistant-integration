@@ -1,5 +1,6 @@
 """WiCAN voltage and battery percentage sensors."""
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import RestoreSensor
 from .entity import WiCANEntity
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -7,7 +8,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                        (("voltage", "12V accuspanning"), ("soc_d", "Accupercentage"),
                         ("soc", "BMS accupercentage"), ("soh", "Accugezondheid"))])
 
-class WiCANSensor(WiCANEntity, SensorEntity):
+class WiCANSensor(WiCANEntity, RestoreSensor):
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, runtime, key, name):
@@ -20,3 +21,32 @@ class WiCANSensor(WiCANEntity, SensorEntity):
     @property
     def native_value(self):
         return self.runtime.state.values.get(self.key)
+
+    @property
+    def available(self):
+        if self.key == "voltage":
+            return super().available
+        return self.runtime.state.percentage_available(self.key)
+
+    @property
+    def extra_state_attributes(self):
+        if self.key == "voltage":
+            return None
+        fresh = self.runtime.available(self.key)
+        return {
+            "last_measured_at": self.runtime.state.measured_at.get(self.key),
+            "data_fresh": fresh,
+            "value_source": "live" if fresh else "last_known",
+        }
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        if self.key == "voltage":
+            return
+        previous_data = await self.async_get_last_sensor_data()
+        previous_state = await self.async_get_last_state()
+        if previous_data is not None:
+            measured_at = (previous_state.attributes.get("last_measured_at")
+                           if previous_state is not None else None)
+            self.runtime.state.restore_percentage(
+                self.key, previous_data.native_value, measured_at)

@@ -2,6 +2,7 @@
 import json
 import math
 import re
+from datetime import datetime, timezone
 
 def device_id(value):
     value = value.lower().replace(":", "").replace("-", "")
@@ -45,6 +46,7 @@ class Values:
     def __init__(self):
         self.values = {}
         self.received = {}
+        self.measured_at = {}
         self.offline = False
 
     def update(self, key, value, now, retained=False):
@@ -52,9 +54,22 @@ class Values:
             return False
         self.values[key] = value
         self.received[key] = now
+        self.measured_at[key] = datetime.now(timezone.utc).isoformat()
         self.offline = False
         return True
 
     def available(self, key, now, timeout):
         return (not self.offline and key in self.received
                 and now - self.received[key] < timeout)
+
+    def restore_percentage(self, key, value, measured_at=None):
+        """Restore a known percentage without inventing a new measurement time."""
+        parsed = number(value, 0, 100)
+        if key not in ("soc_d", "soc", "soh") or key in self.values or parsed is None:
+            return False
+        self.values[key] = parsed
+        self.measured_at[key] = measured_at
+        return True
+
+    def percentage_available(self, key):
+        return key in ("soc_d", "soc", "soh") and key in self.values
