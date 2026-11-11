@@ -21,6 +21,8 @@ class WiCANRuntime:
         self.listeners = set()
         self.unsubs = []
         self.stopped = False
+        self.contact_at = None
+        self.connection_offline = False
         self.next_poll = 0
         self.pending_until = 0
         self.next_probe = 0
@@ -61,11 +63,15 @@ class WiCANRuntime:
         if message.topic == self.config["status_topic"]:
             status = data.get("status")
             if status == "offline" and not message.retain:
+                self.connection_offline = True
                 self.state.offline = True
                 self.state.received.clear()
                 self.pending_until = 0
                 self.next_probe = now + 300
             elif status == "online":
+                if not message.retain:
+                    self.contact_at = now
+                    self.connection_offline = False
                 # Retained online is a hint to probe, not proof of availability.
                 self.next_poll = 0
                 self.next_probe = 0
@@ -79,6 +85,8 @@ class WiCANRuntime:
                 value = number(data.get("battery_voltage"), 0, 30)
                 if self.state.update("voltage", value, now):
                     self.pending_until = 0
+                    self.contact_at = now
+                    self.connection_offline = False
         else:
             for key, field in (("soc_d", "SOC_D"), ("soc", "SOC"), ("soh", "SOH"),
                                ("charger_connected", "CHARGER_CONNECTED"),
@@ -93,7 +101,9 @@ class WiCANRuntime:
                           "hv_voltage": (0, 500), "battery_current": (-1000, 1000),
                           "battery_power": (-500, 500)}
                 parsed = number(value, *limits[key]) if key in limits else flag(value)
-                self.state.update(key, parsed, now)
+                if self.state.update(key, parsed, now):
+                    self.contact_at = now
+                    self.connection_offline = False
         self.notify()
 
     async def tick(self, _now):
@@ -115,6 +125,14 @@ class WiCANRuntime:
         except Exception:
             self.pending_until = 0
             _LOGGER.warning("Could not request WiCAN voltage", exc_info=True)
+
+    @property
+    def reachable(self):
+        if self.connection_offline:
+            return False
+        if self.contact_at is None:
+            return None
+        return monotonic() - self.contact_at < self.timeout
 
     def available(self, key):
         return self.state.available(key, monotonic(), self.timeout)

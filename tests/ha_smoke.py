@@ -49,3 +49,13 @@ for changes in ({'battery_power_topic':data['soc_d_topic']},{'hv_voltage_topic':
  else:raise AssertionError(changes)
 assert validate(data,data['device_id'])['battery_power_topic']==''
 print('HA optional HV topics, signed power metadata and validation: PASS')
+
+from custom_components.wican_mqtt.binary_sensor import WiCANReachableSensor
+reach=WiCANReachableSensor(r)
+assert reach.device_class=='connectivity' and not reach.available
+r.contact_at=__import__('time').monotonic(); r.connection_offline=False
+assert reach.available and reach.is_on
+r.connection_offline=True
+assert reach.available and not reach.is_on
+assert reach.extra_state_attributes['sleep_confirmed'] is False
+print('HA reachability sensor remains visible while offline: PASS')

@@ -117,3 +117,25 @@ class HVRuntime(Runtime):
   self.now+=181
   self.assertFalse(self.r.available('battery_power'))
   self.assertFalse(self.r.available('hv_voltage'))
+
+
+class Reachability(Runtime):
+ async def test_contact_lifecycle(self):
+  self.assertIsNone(self.r.reachable)
+  self.msg(self.data['status_topic'],{'status':'online'},True)
+  self.assertIsNone(self.r.reachable)
+  self.msg(self.data['status_topic'],{'status':'online'})
+  self.assertTrue(self.r.reachable)
+  self.now+=181
+  self.assertFalse(self.r.reachable)
+  self.msg(self.data['soc_topic'],{'SOC':40})
+  self.assertTrue(self.r.reachable)
+  self.msg(self.data['status_topic'],{'status':'offline'})
+  self.assertFalse(self.r.reachable)
+  self.msg(self.data['soc_topic'],{'SOC':40},True)
+  self.assertFalse(self.r.reachable)
+  self.msg(self.data['status_topic'],{'status':'online'},True)
+  self.assertFalse(self.r.reachable)
+  await self.r.tick(None)
+  self.msg(self.r.response_topic,{'battery_voltage':14.8})
+  self.assertTrue(self.r.reachable)
