@@ -1,0 +1,62 @@
+{
+  "title": "WiCAN MQTT",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add WiCAN or WiCAN Pro",
+        "description": "Use the MQTT topics configured on your device. DEVICE_ID is replaced automatically. Set up MQTT in Home Assistant first.",
+        "data": {
+          "device_id": "Device ID (12 hex characters)",
+          "name": "Device name",
+          "model": "Model",
+          "status_topic": "Status topic",
+          "poll_interval": "Voltage polling interval (seconds)",
+          "stale_after": "Measurement expiry (seconds)",
+          "soc_d_topic": "SOC_D topic",
+          "soc_topic": "SOC topic",
+          "soh_topic": "SOH topic",
+          "charging_topic": "CHARGING topic",
+          "charging_dc_topic": "CHARGING_DC topic",
+          "charger_connected_topic": "CHARGER_CONNECTED topic"
+        }
+      }
+    },
+    "error": {
+      "invalid_device_id": "Enter 12 hexadecimal characters.",
+      "invalid_topic": "Enter a full topic without + or #.",
+      "duplicate_topic": "Use distinct topics; cmd, rsp and battery are reserved.",
+      "invalid_timeout": "Expiry must be at least twice the polling interval.",
+      "invalid_name": "Enter a device name."
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "WiCAN MQTT settings",
+        "data": {
+          "name": "Device name",
+          "model": "Model",
+          "status_topic": "Status topic",
+          "poll_interval": "Voltage polling interval (seconds)",
+          "stale_after": "Measurement expiry (seconds)",
+          "soc_d_topic": "SOC_D topic",
+          "soc_topic": "SOC topic",
+          "soh_topic": "SOH topic",
+          "charging_topic": "CHARGING topic",
+          "charging_dc_topic": "CHARGING_DC topic",
+          "charger_connected_topic": "CHARGER_CONNECTED topic"
+        }
+      }
+    },
+    "error": {
+      "invalid_device_id": "Enter 12 hexadecimal characters.",
+      "invalid_topic": "Enter a full topic without + or #.",
+      "duplicate_topic": "Use distinct topics; cmd, rsp and battery are reserved.",
+      "invalid_timeout": "Expiry must be at least twice the polling interval.",
+      "invalid_name": "Enter a device name."
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "title": "WiCAN MQTT",
+  "config": {
+    "step": {
+      "user": {
+        "title": "WiCAN of WiCAN Pro toevoegen",
+        "description": "Gebruik de MQTT-topics die nu op jouw apparaat zijn ingesteld. DEVICE_ID wordt automatisch vervangen. MQTT moet al ingesteld zijn in Home Assistant.",
+        "data": {
+          "device_id": "Apparaat-ID (12 hextekens, bijvoorbeeld dcb4d92aa961)",
+          "name": "Apparaatnaam",
+          "model": "Model",
+          "status_topic": "Status-topic",
+          "poll_interval": "Spanning opvragen om de (seconden)",
+          "stale_after": "Meting vervalt na (seconden)",
+          "soc_d_topic": "SOC_D topic",
+          "soc_topic": "SOC topic",
+          "soh_topic": "SOH topic",
+          "charger_connected_topic": "CHARGER_CONNECTED topic",
+          "charging_topic": "CHARGING topic",
+          "charging_dc_topic": "CHARGING_DC topic"
+        }
+      }
+    },
+    "error": {
+      "invalid_device_id": "Gebruik een apparaat-ID van 12 hextekens.",
+      "invalid_topic": "Gebruik een volledig topic zonder + of #.",
+      "duplicate_topic": "Gebruik verschillende topics; cmd, rsp en battery zijn gereserveerd.",
+      "invalid_timeout": "De vervaltijd moet minstens tweemaal het opvraaginterval zijn.",
+      "invalid_name": "Vul een apparaatnaam in."
+    },
+    "abort": {
+      "already_configured": "Dit apparaat is al ingesteld."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "WiCAN MQTT-instellingen",
+        "data": {
+          "name": "Apparaatnaam",
+          "model": "Model",
+          "status_topic": "Status-topic",
+          "poll_interval": "Spanning opvragen om de (seconden)",
+          "stale_after": "Meting vervalt na (seconden)",
+          "soc_d_topic": "SOC_D topic",
+          "soc_topic": "SOC topic",
+          "soh_topic": "SOH topic",
+          "charger_connected_topic": "CHARGER_CONNECTED topic",
+          "charging_topic": "CHARGING topic",
+          "charging_dc_topic": "CHARGING_DC topic"
+        }
+      }
+    },
+    "error": {
+      "invalid_device_id": "Gebruik een apparaat-ID van 12 hextekens.",
+      "invalid_topic": "Gebruik een volledig topic zonder + of #.",
+      "duplicate_topic": "Gebruik verschillende topics; cmd, rsp en battery zijn gereserveerd.",
+      "invalid_timeout": "De vervaltijd moet minstens tweemaal het opvraaginterval zijn.",
+      "invalid_name": "Vul een apparaatnaam in."
+    }
+  }
+}
