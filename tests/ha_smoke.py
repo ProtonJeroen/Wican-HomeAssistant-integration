@@ -11,9 +11,9 @@ from types import SimpleNamespace
 assert callable(mqtt.async_wait_for_mqtt_client)
 assert callable(mqtt.async_subscribe)
 assert callable(mqtt.async_publish)
-data=schema({},True)({'device_id':'dcb4d92aa961'})
+data=schema({},True)({'device_id':'aabb11223344'})
 data=validate(data,data['device_id'])
-assert data['status_topic']=='wican-pro/dcb4d92aa961/can/status'
+assert data['status_topic']=='wican-pro/aabb11223344/can/status'
 r=WiCANRuntime(None,SimpleNamespace(data=data,options={}))
 s=WiCANSensor(r,'voltage','12V accuspanning')
 assert s.native_unit_of_measurement=='V'
@@ -23,7 +23,7 @@ assert not s.available
 b=WiCANBinarySensor(r,'charging','Laden')
 assert b.device_class=='battery_charging'
 assert not b.available
-for changes in ({'status_topic':data['soc_d_topic']},{'status_topic':'wican/dcb4d92aa961/rsp'},{'stale_after':60}):
+for changes in ({'status_topic':data['soc_d_topic']},{'status_topic':'wican/aabb11223344/rsp'},{'stale_after':60}):
  try:validate({**data,**changes},data['device_id'])
  except ValueError:pass
  else:raise AssertionError(changes)

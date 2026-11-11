@@ -19,7 +19,7 @@ class Parsing(unittest.TestCase):
  def test_bad_json(self):
   for v in ('x','[]','null','1',b'\xff'):self.assertEqual(p.decode(v),{})
  def test_ids_topics(self):
-  self.assertEqual(p.device_id('DC:B4:D9:2A:A9:61'),'dcb4d92aa961')
+  self.assertEqual(p.device_id('AA:BB:11:22:33:44'),'aabb11223344')
   for v in ('','#','a/+','a\x00b'):
    with self.assertRaises(ValueError):p.topic(v)
  def test_retained_and_expiry(self):
@@ -35,14 +35,14 @@ class Runtime(unittest.IsolatedAsyncioTestCase):
   async def sub(h,t,cb,q):
    self.topics.append(t);return lambda:self.removed.append(t)
   m.async_subscribe=sub;m.async_publish=AsyncMock()
-  self.data={'device_id':'dcb4d92aa961','name':'WiCAN Pro','model':'WiCAN Pro','status_topic':'wicanpro/id/can/status','poll_interval':60,'stale_after':180}
+  self.data={'device_id':'aabb11223344','name':'WiCAN Pro','model':'WiCAN Pro','status_topic':'wicanpro/id/can/status','poll_interval':60,'stale_after':180}
   self.data.update({k+'_topic':'wicanpro/ioniq/'+k for k in ('soc_d','soc','soh','charging','charging_dc','charger_connected')})
   self.r=rt.WiCANRuntime(object(),types.SimpleNamespace(data=self.data,options={}))
   await self.r.async_start()
  def msg(self,t,data,ret=False):self.r.message(types.SimpleNamespace(topic=t,payload=json.dumps(data),retain=ret))
  async def test_live_voltage_and_interval(self):
   await self.r.tick(None)
-  c=m.async_publish.call_args;self.assertEqual(c.args[1],'wican/dcb4d92aa961/cmd');self.assertFalse(c.kwargs['retain'])
+  c=m.async_publish.call_args;self.assertEqual(c.args[1],'wican/aabb11223344/cmd');self.assertFalse(c.kwargs['retain'])
   self.msg(self.r.response_topic,{'battery_voltage':14.8});self.assertTrue(self.r.available('voltage'))
   self.now+=60;await self.r.tick(None);self.assertEqual(m.async_publish.await_count,2)
  async def test_retained_unsolicited_expired(self):

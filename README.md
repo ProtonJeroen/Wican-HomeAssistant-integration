@@ -12,12 +12,12 @@ MQTT/Mosquitto moet al geconfigureerd zijn. Deze integratie gebruikt de bestaand
 
 HACS, nadat de repository bestaat: voeg `ProtonJeroen/Wican-HomeAssistant-integration` toe als aangepaste repository van type Integratie, download en herstart.
 
-## Instellingen voor Jeroens Pro
+## Voorbeeldinstellingen voor een Pro
 
-- Apparaat-ID: `dcb4d92aa961`
+- Apparaat-ID: jouw eigen apparaat-ID (hier als voorbeeld `aabb11223344`)
 - Naam: `WiCAN Pro` (gewone WiCAN apart toevoegen met andere ID en naam)
 - Model: `WiCAN Pro`
-- Status-topic nu: `wicanpro/dcb4d92aa961/can/status`
+- Status-topic nu: `wicanpro/aabb11223344/can/status`
 - AutoPID-topics nu: `wicanpro/ioniq/soc_d`, `soc`, `soh`, `charger_connected`, `charging`, `charging_dc` (telkens met dezelfde prefix).
 - Interval: 60 seconden; vervaltijd: 180 seconden.
 
