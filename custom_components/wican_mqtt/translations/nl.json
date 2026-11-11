@@ -6,7 +6,7 @@
         "title": "WiCAN of WiCAN Pro toevoegen",
         "description": "Gebruik de MQTT-topics die nu op jouw apparaat zijn ingesteld. DEVICE_ID wordt automatisch vervangen. MQTT moet al ingesteld zijn in Home Assistant.",
         "data": {
-          "device_id": "Apparaat-ID (12 hextekens, bijvoorbeeld dcb4d92aa961)",
+          "device_id": "Apparaat-ID (12 hextekens, bijvoorbeeld aabb11223344)",
           "name": "Apparaatnaam",
           "model": "Model",
           "status_topic": "Status-topic",

@@ -19,7 +19,7 @@ class Parsing(unittest.TestCase):
  def test_bad_json(self):
   for v in ('x','[]','null','1',b'\xff'):self.assertEqual(p.decode(v),{})
  def test_ids_topics(self):
-  self.assertEqual(p.device_id('DC:B4:D9:2A:A9:61'),'dcb4d92aa961')
+  self.assertEqual(p.device_id('AA:BB:11:22:33:44'),'aabb11223344')
   for v in ('','#','a/+','a\x00b'):
    with self.assertRaises(ValueError):p.topic(v)
  def test_retained_and_expiry(self):
@@ -35,14 +35,14 @@ class Runtime(unittest.IsolatedAsyncioTestCase):
   async def sub(h,t,cb,q):
    self.topics.append(t);return lambda:self.removed.append(t)
   m.async_subscribe=sub;m.async_publish=AsyncMock()
-  self.data={'device_id':'dcb4d92aa961','name':'WiCAN Pro','model':'WiCAN Pro','status_topic':'wicanpro/id/can/status','poll_interval':60,'stale_after':180}
+  self.data={'device_id':'aabb11223344','name':'WiCAN Pro','model':'WiCAN Pro','status_topic':'wicanpro/id/can/status','poll_interval':60,'stale_after':180}
   self.data.update({k+'_topic':'wicanpro/ioniq/'+k for k in ('soc_d','soc','soh','charging','charging_dc','charger_connected')})
   self.r=rt.WiCANRuntime(object(),types.SimpleNamespace(data=self.data,options={}))
   await self.r.async_start()
  def msg(self,t,data,ret=False):self.r.message(types.SimpleNamespace(topic=t,payload=json.dumps(data),retain=ret))
  async def test_live_voltage_and_interval(self):
   await self.r.tick(None)
-  c=m.async_publish.call_args;self.assertEqual(c.args[1],'wican/dcb4d92aa961/cmd');self.assertFalse(c.kwargs['retain'])
+  c=m.async_publish.call_args;self.assertEqual(c.args[1],'wican/aabb11223344/cmd');self.assertFalse(c.kwargs['retain'])
   self.msg(self.r.response_topic,{'battery_voltage':14.8});self.assertTrue(self.r.available('voltage'))
   self.now+=60;await self.r.tick(None);self.assertEqual(m.async_publish.await_count,2)
  async def test_retained_unsolicited_expired(self):
@@ -65,3 +65,38 @@ class Runtime(unittest.IsolatedAsyncioTestCase):
   self.assertNotEqual(other.device_info['identifiers'],self.r.device_info['identifiers'])
   await self.r.tick(None);self.msg(other.response_topic,{'battery_voltage':10});self.assertFalse(self.r.available('voltage'))
   self.r.stop();self.assertEqual(len(self.removed),len(self.topics));await self.r.tick(None);self.assertEqual(m.async_publish.await_count,1)
+
+class LastKnownPercentages(unittest.TestCase):
+ def test_expiry_preserves_percentage_but_not_live_state(self):
+  s=p.Values();s.update('soc_d',25,100);stamp=s.measured_at['soc_d']
+  s.update('charging',True,100);s.update('voltage',14.8,100)
+  self.assertTrue(s.percentage_available('soc_d'))
+  self.assertFalse(s.available('soc_d',281,180))
+  self.assertFalse(s.available('charging',281,180))
+  self.assertFalse(s.available('voltage',281,180))
+  self.assertEqual(s.measured_at['soc_d'],stamp)
+  s.offline=True;s.received.clear()
+  self.assertTrue(s.percentage_available('soc_d'))
+  self.assertEqual(s.values['soc_d'],25)
+ def test_restore_is_not_a_new_measurement(self):
+  s=p.Values();stamp='2026-11-11T19:26:04+00:00'
+  self.assertTrue(s.restore_percentage('soc_d','25',stamp))
+  self.assertTrue(s.percentage_available('soc_d'))
+  self.assertFalse(s.available('soc_d',1000,180))
+  self.assertEqual(s.measured_at['soc_d'],stamp)
+  s.update('voltage',12.8,1000)
+  self.assertFalse(s.available('soc_d',1000,180))
+  self.assertFalse(s.restore_percentage('voltage',14.8,stamp))
+ def test_fresh_reading_wins_over_restore_and_retained(self):
+  s=p.Values();s.update('soc_d',26,100);stamp=s.measured_at['soc_d']
+  self.assertFalse(s.restore_percentage('soc_d',25,'old'))
+  self.assertFalse(s.update('soc_d',24,101,True))
+  self.assertEqual(s.values['soc_d'],26)
+  self.assertEqual(s.measured_at['soc_d'],stamp)
+ def test_invalid_restore_and_unknown_timestamp(self):
+  s=p.Values()
+  for v in ('unknown','unavailable',True,101,-1,'nan'):
+   self.assertFalse(s.restore_percentage('soh',v))
+  self.assertFalse(s.percentage_available('soh'))
+  self.assertTrue(s.restore_percentage('soh',100))
+  self.assertIsNone(s.measured_at['soh'])

@@ -1,4 +1,4 @@
-# WiCAN MQTT — 0.1.0
+# WiCAN MQTT — 0.1.1
 
 Eigen Home Assistant-integratie voor WiCAN en WiCAN Pro via de bestaande MQTT-integratie.
 Eerste testversie, nog niet getest op een draaiende Home Assistant-installatie.
@@ -12,12 +12,12 @@ MQTT/Mosquitto moet al geconfigureerd zijn. Deze integratie gebruikt de bestaand
 
 HACS, nadat de repository bestaat: voeg `ProtonJeroen/Wican-HomeAssistant-integration` toe als aangepaste repository van type Integratie, download en herstart.
 
-## Instellingen voor Jeroens Pro
+## Voorbeeldinstellingen voor een Pro
 
-- Apparaat-ID: `***********
+- Apparaat-ID: jouw eigen apparaat-ID (hier als voorbeeld `aabb11223344`)
 - Naam: `WiCAN Pro` (gewone WiCAN apart toevoegen met andere ID en naam)
 - Model: `WiCAN Pro`
-- Status-topic nu: `wicanpro/dcb4d92aa961/can/status`
+- Status-topic nu: `wicanpro/aabb11223344/can/status`
 - AutoPID-topics nu: `wicanpro/ioniq/soc_d`, `soc`, `soh`, `charger_connected`, `charging`, `charging_dc` (telkens met dezelfde prefix).
 - Interval: 60 seconden; vervaltijd: 180 seconden.
 
@@ -38,7 +38,7 @@ Firmware 4.52p zet `/battery` alleen bij het verbinden. Daarom gebruikt deze int
 - Antwoord `wican/<id>/rsp`, JSON-key `battery_voltage`.
 Deze hardwaretopics zijn vast in 4.52p en blijven onder `wican`, ook bij een Pro. Sensoren blijven onder het afzonderlijke Pro-apparaat; er worden geen extra of dubbele MQTT-topics gepubliceerd.
 
-Een antwoord wordt alleen binnen 15 seconden na een aanvraag verwerkt. Retained meetwaarden worden genegeerd; een retained online-status geeft alleen aanleiding voor een nieuwe aanvraag. Een verse offline-status maakt de metingen ongeldig. Elke meting heeft een eigen vervaltijd: SoC-verkeer houdt een oude spanning niet beschikbaar. Standaard vervalt een meting na 180 seconden; stel dit ruimer in bij langzamere AutoPID-publicatie.
+Een antwoord wordt alleen binnen 15 seconden na een aanvraag verwerkt. Retained meetwaarden worden genegeerd; een retained online-status geeft alleen aanleiding voor een nieuwe aanvraag. Een verse offline-status maakt de actuele status ongeldig. Spanning en binaire laadstatussen vervallen afzonderlijk na standaard 180 seconden. SoC (SOC_D en BMS SOC) en SOH blijven als laatst bekende waarde beschikbaar, ook bij slapen/offline. Hun attributen `last_measured_at`, `data_fresh` en `value_source` tonen wanneer de meting binnenkwam en of deze nog vers is. Bij herstart/herladen herstelt HA de percentages met de oorspronkelijke meettijd; herstelde waarden zijn nooit automatisch vers. Een onbekende meettijd blijft leeg. Retained MQTT-percentages worden nog steeds niet als nieuwe meting verwerkt. SoC-verkeer houdt een oude spanning niet beschikbaar.
 
 Zonder verse gegevens wordt slechts eens per vijf minuten geprobeerd, om niet voortdurend te publiceren terwijl het apparaat slaapt. Een aanvraag kan een slapende WiCAN niet wakker maken. Het apparaat moet zelf ontwaken. De integratie verandert geen slaapinstellingen en leest geen extra voertuig-PIDs uit.
 
@@ -56,3 +56,7 @@ MQTT-topics, model, naam, interval en vervaltijd zijn wijzigbaar via de integrat
 Unit tests dekken parsing, freshness, retained data, polling, topic isolation en lifecycle met een gesimuleerde HA/MQTT-laag. Een echte HA-installatie en beide apparaten moeten nog worden getest. De Pro-opvraagopdracht is handmatig bevestigd met 14,8 V; ondersteuning op de gewone WiCAN moet op diens firmware worden geverifieerd.
 
 Validatie 2026-11-11: 10 unit tests geslaagd. HA 2025.2.0 imports, configuratieschema en entity-metadata geslaagd met Python 3.13 (testomgeving gebruikt ciso8601 >=2.3.3 en lru-dict >=1.4.1 vanwege beschikbare wheels). Live HA Green/MQTT-installatietest nog uit te voeren.
+
+## 0.1.1
+
+Behoud laatst bekende percentages bij voertuigstilstand en herstart, met oorspronkelijke meettijd en freshness-attributen. Laadstatussen en spanning blijven vervallen. Smart EV Charging ziet hierdoor een laatst bekende SoC: controleer `data_fresh`/`last_measured_at` voor toepassingen die een recente meting vereisen.
