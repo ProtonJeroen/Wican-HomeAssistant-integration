@@ -14,7 +14,7 @@ HACS, nadat de repository bestaat: voeg `ProtonJeroen/Wican-HomeAssistant-integr
 
 ## Instellingen voor Jeroens Pro
 
-- Apparaat-ID: `dcb4d92aa961`
+- Apparaat-ID: `***********
 - Naam: `WiCAN Pro` (gewone WiCAN apart toevoegen met andere ID en naam)
 - Model: `WiCAN Pro`
 - Status-topic nu: `wicanpro/dcb4d92aa961/can/status`
